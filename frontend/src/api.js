@@ -1,5 +1,5 @@
 // Local development adapter. No credentials or model API keys belong here.
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 async function request(path, body) {
   let response;
@@ -8,10 +8,10 @@ async function request(path, body) {
       method: body === undefined ? 'GET' : 'POST',
       headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(45000),
     });
   } catch {
-    throw new Error('Cannot reach the API or request timed out. Check the backend on localhost:8000. A timed-out action may have completed; refresh the audit log before retrying.');
+    throw new Error('Cannot reach the API or request timed out. The shared service may be waking up; wait a moment and refresh. For local development, check the backend terminal. A timed-out action may have completed; refresh the audit log before retrying.');
   }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
@@ -24,6 +24,7 @@ async function request(path, body) {
 }
 
 export const api = {
+  status: () => request('/status'),
   users: () => request('/users'),
   events: () => request('/events'),
   chat: (customerId, message) => request('/chat', { customer_id: customerId, message }),

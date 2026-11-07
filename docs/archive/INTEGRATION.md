@@ -1,6 +1,8 @@
+> **Archived planning reference — not the current task list.** Use the [README](../../README.md) for current team instructions.
+
 # Integration reference
 
-Optional technical reference. Start with the [README](../README.md) and your section in the [team guide](../TEAM_GUIDE.md).
+Optional technical reference. Start with the [README](../../README.md) and your section in the [team guide](TEAM_GUIDE.md).
 
 ## Architecture and request flow
 

@@ -1,9 +1,17 @@
 """Local research-console adapter; preserves all simulation module contracts."""
 from threading import Lock
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from hosting import TeamAccessMiddleware
 
 from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from config import Settings
+from llm.client import LLMError
+from llm.setup import configured_orchestrator
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from orchestrator import Orchestrator
@@ -29,14 +37,15 @@ class AttackRequest(BaseModel):
     target_customer_id: str
 
 
-def create_app(orchestrator: Orchestrator | None = None) -> FastAPI:
+def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings | None = None) -> FastAPI:
     """Inject a compatible orchestrator for tests or teammate integration.
 
     One process owns one shared demo log. Restart/reload clears it. A lock
     serializes synchronous simulation calls, including audit snapshots.
     """
     api = FastAPI(title="Healthcare AI Security", version="0.1.0")
-    simulation = orchestrator if orchestrator is not None else Orchestrator()
+    settings = settings if settings is not None else Settings()
+    simulation = orchestrator if orchestrator is not None else configured_orchestrator(settings)
     lock = Lock()
     api.add_middleware(
         CORSMiddleware,
@@ -45,6 +54,25 @@ def create_app(orchestrator: Orchestrator | None = None) -> FastAPI:
         allow_headers=["Content-Type"],
         allow_credentials=False,
     )
+
+    if settings.hosted:
+        if len(settings.team_password) < 16:
+            raise ValueError("Hosted mode requires a team password of at least 16 characters")
+        api.add_middleware(TeamAccessMiddleware, password=settings.team_password)
+
+    @api.get("/healthz", include_in_schema=False)
+    def health():
+        return {"status": "ok"}
+
+    @api.exception_handler(LLMError)
+    async def model_error(request, exc):
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+    @api.get("/api/status")
+    def status():
+        return {"enterprise_mode": settings.mode,
+                "enterprise_model": settings.enterprise_model if settings.mode == "live" else None,
+                "red_mode": "mock", "blue_mode": "mock"}
 
     def demo_user(customer_id: str):
         for user in DEMO_USERS:
@@ -77,7 +105,13 @@ def create_app(orchestrator: Orchestrator | None = None) -> FastAPI:
         with lock:
             return jsonable_encoder(simulation.events())
 
+    # API routes must precede the static mount. Local Vite development stays separate.
+    frontend_dist = Path(__file__).parent / "frontend" / "dist"
+    if settings.hosted:
+        if not (frontend_dist / "index.html").is_file():
+            raise ValueError("Hosted mode requires a built frontend/dist/index.html")
+        api.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
     return api
 
 
-app = create_app()
+app = create_app(settings=Settings.from_env())

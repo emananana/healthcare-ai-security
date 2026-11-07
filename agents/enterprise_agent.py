@@ -1,17 +1,19 @@
-"""UI/integration owner: deterministic stand-in for the enterprise LLM.
+"""Eman: guarded enterprise execution with optional live LLM planning.
 
-Replace propose_action with constrained LLM tool selection later. Keep all
-record reads behind the gateway, independent of model recommendations.
+Default construction remains offline. Inject llm to enable bounded live calls.
+Every proposed read passes through the existing blue agent and gateway.
 """
 import re
 from agents.blue_agent import BlueAgent
 from database.repository import MockRepository
 from security.audit import AuditLog
 from security.gateway import SecurityGateway
+from llm.client import LLMError
 from shared.models import EnterpriseResponse, ProposedAction, SecurityEvent, User
 
 class EnterpriseAgent:
-    def __init__(self, gateway=None, repository=None, blue_agent=None, audit=None):
+    def __init__(self, gateway=None, repository=None, blue_agent=None, audit=None, *, llm=None):
+        self.llm = llm
         self.gateway = gateway if gateway is not None else SecurityGateway()
         self.repository = repository if repository is not None else MockRepository()
         self.blue_agent = blue_agent if blue_agent is not None else BlueAgent()
@@ -32,11 +34,27 @@ class EnterpriseAgent:
 
         The required two-argument call remains supported; source is optional.
         """
-        event = SecurityEvent(user, message, self.propose_action(user, message), source=source)
+        event = SecurityEvent(user, message, ProposedAction("unsupported", user.customer_id), source=source)
+        transcript = None
+        try:
+            if self.llm is not None:
+                event.action, transcript = self.llm.plan(user, message)
+            else:
+                event.action = self.propose_action(user, message)
+        except LLMError:
+            # PENDING means execution did not finish, not a successful blue detection.
+            self.audit.record(event)
+            raise
         event.defense = self.blue_agent.analyze_event(event)
         event.authorization = self.gateway.authorize(user, event.action)
         if event.defense.recommendation == "ALLOW" and event.authorization.allowed:
-            reply = self.repository.read(event.action)
+            record = self.repository.read(event.action)
+            try:
+                reply = self.llm.answer(transcript, record) if self.llm is not None else record
+            except LLMError:
+                # Authorization may be allowed, but no completed response was returned.
+                self.audit.record(event)
+                raise
             event.outcome = "ALLOW"
         else:
             event.outcome = "BLOCK"

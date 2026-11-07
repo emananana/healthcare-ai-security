@@ -1,3 +1,5 @@
+> **Archived planning reference — not the current task list.** Use the [README](../../README.md) for current team instructions.
+
 # CometCare project roadmap
 
 **Goal:** deliver the proposal's synthetic enterprise simulation, with a working enterprise LLM assistant, different red/blue LLMs, traditional security controls, bounded adaptive attacks, a deceptive defense, and measured comparisons.

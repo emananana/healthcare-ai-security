@@ -35,6 +35,7 @@ const time = value => { const date = new Date(value); return Number.isNaN(date.g
 
 function App() {
   const [users, setUsers] = useState([]);
+  const [runtime, setRuntime] = useState(null);
   const [customerId, setCustomerId] = useState('');
   const [events, setEvents] = useState([]);
   const [history, setHistory] = useState({});
@@ -56,7 +57,8 @@ function App() {
   async function load() {
     setBusy('Refreshing demo data'); setError('');
     try {
-      const [nextUsers, nextEvents] = await Promise.all([api.users(), api.events()]);
+      const [nextUsers, nextEvents, nextRuntime] = await Promise.all([api.users(), api.events(), api.status()]);
+      setRuntime(nextRuntime);
       setUsers(nextUsers); setCustomerId(current => nextUsers.some(u => u.customer_id === current) ? current : nextUsers[0]?.customer_id || '');
       setEvents(nextEvents);
     } catch (err) { setError(err.message); }
@@ -112,6 +114,7 @@ function App() {
       <header className="topbar"><div className="breadcrumb">CometCare <span>/</span> <strong>{lab ? 'Security Lab' : 'Member Portal'}</strong></div><div className="identity"><span className="avatar">{user?.display_name?.charAt(0) || 'C'}</span><label><span>Demo member</span><select aria-label="Select demo customer" value={customerId} disabled={!!busy || !users.length} onChange={event => { setCustomerId(event.target.value); setMessage(''); setAttack(null); setError(''); }}>{!users.length && <option value="">No members loaded</option>}{users.map(u => <option key={u.customer_id} value={u.customer_id}>{u.display_name} · {u.customer_id}</option>)}</select></label></div></header>
       <main id="content" tabIndex="-1">
         <div className="page-heading"><div><div className="eyebrow">{lab ? 'COMETCARE / SECURITY RESEARCH' : 'A LITTLE PEACE OF MIND'}</div><h1>{page === 'Overview' ? `Welcome, ${user?.display_name || 'stargazer'}.` : page}</h1><p>{lab ? 'Controlled simulations. Clear decisions. Better understanding.' : page === 'Overview' ? 'Let’s make looking after your health feel a little simpler.' : 'Your health is our universe.'}</p></div><span className="demo-label"><span className="demo-dot"/> Synthetic Demo</span></div>
+        {runtime && <p className="muted">Assistant: {runtime.enterprise_mode === 'live' ? `Live Groq · ${runtime.enterprise_model}` : 'Mock (no LLM calls)'} · Red team: {runtime.red_mode} · Blue team: {runtime.blue_mode}</p>}
         {busy && <div className="status" role="status"><span className="spinner"/>{busy}…</div>}
         {error && <div className="error" role="alert"><strong>We couldn’t complete that request.</strong><p>{error}</p><button className="secondary" onClick={load} disabled={!!busy}>Reconnect & refresh</button></div>}
         {!busy && !users.length && !error && <Empty title="No demo members available">A demo member is needed to retrieve records or send a request. <button className="text-button" onClick={load}>Refresh demo</button></Empty>}

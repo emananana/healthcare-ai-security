@@ -1,12 +1,14 @@
+> **Archived planning reference — not the current task list.** Use the [README](../../README.md) for current team instructions.
+
 # Your part of CometCare
 
-Start the app using the [README](README.md), then read your section below. **Write your code in VS Code; use CometCare to observe the results.** The frontend is already connected to your module.
+Start the app using the [README](../../README.md), then read your section below. **Write your code in VS Code; use CometCare to observe the results.** The frontend is already connected to your module.
 
 The tasks below are your immediate starting points. **[ROADMAP.md](ROADMAP.md)** lays out the full proposal, including working LLMs, dependencies, adaptation, deception, evaluation, and hosting. A working three-LLM demonstration is a required milestone, not a stretch goal.
 
 ## Vanessa — generate the simulated request
 
-**Open:** [agents/red_agent.py](agents/red_agent.py).
+**Open:** [agents/red_agent.py](../../agents/red_agent.py).
 
 **Today:** it returns one fixed request for another customer's claims.
 
@@ -26,7 +28,7 @@ The context contains `target_customer_id`. Return the existing `Attack` dataclas
 
 ## Reya — analyze the request
 
-**Open:** [agents/blue_agent.py](agents/blue_agent.py).
+**Open:** [agents/blue_agent.py](../../agents/blue_agent.py).
 
 **Today:** it checks whether the requested customer differs from the requesting customer.
 
@@ -48,7 +50,7 @@ The neighboring **Traditional authorization** result belongs to Zhaotong. Your A
 
 ## Zhaotong — provide records and enforce access
 
-**Start with:** [database/repository.py](database/repository.py) and [security/gateway.py](security/gateway.py). You also own the other files in `database/` and `security/`.
+**Start with:** [database/repository.py](../../database/repository.py) and [security/gateway.py](../../security/gateway.py). You also own the other files in `database/` and `security/`.
 
 **Today:** records are stored in memory; the gateway only allows supported reads of the requesting customer's own records.
 
@@ -89,4 +91,4 @@ Own `frontend/`, `main.py`, `orchestrator.py`, `agents/enterprise_agent.py`, eva
 
 Everyone runs a separate local copy. You see a teammate's work after it is merged and you pull it—not simply because they saved their file.
 
-Keep all records synthetic and secrets out of Git. If you need exact fields or API details, use the [integration reference](docs/INTEGRATION.md); you do not need to read it all before starting.
+Keep all records synthetic and secrets out of Git. If you need exact fields or API details, use the [integration reference](INTEGRATION.md); you do not need to read it all before starting.
