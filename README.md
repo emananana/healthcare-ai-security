@@ -58,9 +58,9 @@ Open **[http://localhost:5173](http://localhost:5173)**. Next time, you can skip
 | Vanessa — red team | [agents/red_agent.py](agents/red_agent.py) | Attack Simulator |
 | Reya — blue team | [agents/blue_agent.py](agents/blue_agent.py) | Defense Analysis |
 | Zhaotong — database/security | [database/repository.py](database/repository.py), [security/gateway.py](security/gateway.py) | Member records, authorization decisions, Audit Log |
-| Integration owner — frontend/chatbot/API | `frontend/`, `main.py`, `orchestrator.py`, `agents/enterprise_agent.py` | Both workspaces |
+| Eman — frontend/chatbot/API | `frontend/`, `main.py`, `orchestrator.py`, `agents/enterprise_agent.py` | Both workspaces |
 
-Task and handoff instructions are in **[TEAM_GUIDE.md](TEAM_GUIDE.md)**. Detailed interfaces are in [docs/INTEGRATION.md](docs/INTEGRATION.md)
+Task and handoff instructions are in **[TEAM_GUIDE.md](TEAM_GUIDE.md)**. For working LLMs, teammate dependencies, experiments, and hosting, see **[ROADMAP.md](ROADMAP.md)**. Detailed interfaces are in [docs/INTEGRATION.md](docs/INTEGRATION.md)
 
 Before handing off code, activate your virtual environment and run:
 

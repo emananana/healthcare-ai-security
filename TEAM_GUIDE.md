@@ -2,7 +2,7 @@
 
 Start the app using the [README](README.md), then read your section below. **Write your code in VS Code; use CometCare to observe the results.** The frontend is already connected to your module.
 
-The next tasks below are small integration milestones. LLM agents, adaptive attacks, authentication, and decoys remain later project work to plan together.
+The tasks below are your immediate starting points. **[ROADMAP.md](ROADMAP.md)** lays out the full proposal, including working LLMs, dependencies, adaptation, deception, evaluation, and hosting. A working three-LLM demonstration is a required milestone, not a stretch goal.
 
 ## Vanessa — generate the simulated request
 
@@ -75,7 +75,7 @@ Test both own-record access and cross-customer denial, including when blue recom
 
 **Hand off:** implementation, seed/setup commands, tests, and any instructions needed to activate the new repository.
 
-## Integration owner — connect everything
+## Eman — connect everything
 
 Own `frontend/`, `main.py`, `orchestrator.py`, `agents/enterprise_agent.py`, evaluation, and API tests. Keep the UI connected, integrate compatible teammate modules, and coordinate shared contract changes. `app.py` is the older Streamlit fallback; teammates can ignore it for the main CometCare workflow.
 
