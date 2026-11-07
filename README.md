@@ -1,12 +1,12 @@
 # CometCare · Healthcare AI Security
 
-Our university project uses a **fictional insurance portal** to study simulated attacks and defenses. All records are synthetic. The app works today with simple mock agents; no API keys are needed. CometCare is not an official UT Dallas service.
+Our university project uses a **fictional insurance portal** to study simulated attacks and defenses. All records are synthetic. The app works today with simple mock agents; no API keys are needed. 
 
-**New to the repo? Run the app below, then read only your section in [TEAM_GUIDE.md](TEAM_GUIDE.md). You do not need to understand every folder.**
+**New to the repo? Run the app below, then read only your section in [TEAM_GUIDE.md](TEAM_GUIDE.md).**
 
 ## 1. Get the project
 
-First time? Clone the repository, then open its folder in VS Code:
+Clone the repository, then open its folder in VS Code:
 
 ```bash
 git clone https://github.com/emananana/healthcare-ai-security.git
@@ -37,7 +37,7 @@ npm ci --prefix frontend
 npm run dev --prefix frontend
 ```
 
-Open **[http://localhost:5173](http://localhost:5173)**. Next time, you can skip creating the virtual environment and installing dependencies unless requirements changed. Press Ctrl+C in each terminal to stop.
+Open **[http://localhost:5173](http://localhost:5173)**. Next time, you can skip creating the virtual environment and installing dependencies unless requirements changed. 
 
 ## 3. Take a two-minute tour
 
@@ -60,14 +60,7 @@ Open **[http://localhost:5173](http://localhost:5173)**. Next time, you can skip
 | Zhaotong — database/security | [database/repository.py](database/repository.py), [security/gateway.py](security/gateway.py) | Member records, authorization decisions, Audit Log |
 | Integration owner — frontend/chatbot/API | `frontend/`, `main.py`, `orchestrator.py`, `agents/enterprise_agent.py` | Both workspaces |
 
-Your next task and handoff instructions are in **[TEAM_GUIDE.md](TEAM_GUIDE.md)**. Detailed interfaces are in [docs/INTEGRATION.md](docs/INTEGRATION.md) when you need them.
-
-## If something seems wrong
-
-- **Cannot reach the API:** check that Terminal 1 is still running; use `localhost:5173` in your browser.
-- **Audit events disappeared:** saving Python code restarts the backend and clears the current in-memory log. This is expected.
-- **A teammate's changes aren't visible:** your app uses your local files. Their changes must be merged and pulled first.
-- **No AI-like answers:** agents and the assistant are currently deterministic mocks, not live LLMs.
+Task and handoff instructions are in **[TEAM_GUIDE.md](TEAM_GUIDE.md)**. Detailed interfaces are in [docs/INTEGRATION.md](docs/INTEGRATION.md)
 
 Before handing off code, activate your virtual environment and run:
 
