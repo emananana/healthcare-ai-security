@@ -1,53 +1,92 @@
-# Team integration guide
+# Your part of CometCare
 
-All fixtures and records must remain synthetic. No real credentials or LLM APIs are needed for this milestone. Work on individual branches and submit small pull requests; do not change another teammate's public contract without agreement.
+Start the app using the [README](README.md), then read your section below. **Write your code in VS Code; use CometCare to observe the results.** The frontend is already connected to your module.
 
-## Vanessa — red agent
+The next tasks below are small integration milestones. LLM agents, adaptive attacks, authentication, and decoys remain later project work to plan together.
 
-Own `agents/red_agent.py` and red-specific tests in a new `tests/test_red_agent.py`.
+## Vanessa — generate the simulated request
 
-1. Preserve `RedAgent.generate_attack(context: dict[str, str]) -> Attack` from `shared.models`.
-2. Read `context['target_customer_id']` as the simulated target; return the request text in `Attack.message` and a category string in `Attack.category`.
-3. For the next mock milestone, add deterministic labeled fixtures only. Coordinate any expanded context fields with the integration developer. Do not call the repository or bypass the enterprise agent.
-4. Test that generation returns the existing dataclass and that the requested target is represented correctly. Keep each call bounded to one attack.
-5. Hand off fixture descriptions, expected outcomes, test commands, and any proposed configuration in your PR. Future model or adaptive work needs a separately agreed scope.
+**Open:** [agents/red_agent.py](agents/red_agent.py).
 
-The UI calls `POST /api/attacks`. The adapter passes your attack through `Orchestrator.run_attack`, which invokes the enterprise agent with `source='red_team'`. No frontend changes should be needed for a compatible replacement.
+**Today:** it returns one fixed request for another customer's claims.
 
-## Reya — blue agent
+**First task:** add and test a small set of deterministic synthetic attack fixtures. Start by testing the current fixture, then agree with the integration owner how additional fixtures will be selected. Keep one generated attack per call; do not change the API yourself.
 
-Own `agents/blue_agent.py` and blue-specific tests in a new `tests/test_blue_agent.py`.
+**Keep this interface:**
 
-1. Preserve `BlueAgent.analyze_event(event: SecurityEvent) -> DefenseDecision`.
-2. Inspect the event's user, message, proposed action and source. At analysis time, defense and authorization may be `None` and outcome is `PENDING`.
-3. Return recommendation `ALLOW`, `BLOCK`, or `DECEIVE`; risk `low`, `medium`, or `high`; and a short reason. Return a decision rather than mutating the event or executing tools.
-4. Add deterministic tests for own-record and cross-customer fixtures, including expected recommendation and risk. Coordinate additional detection scenarios with the integration developer.
-5. Keep optional taxonomy labels within the existing reason for now or propose a shared schema change for team review. Do not add fields directly to `shared/models.py` independently.
+```python
+RedAgent.generate_attack(context) -> Attack
+```
 
-The frontend reads the existing event's `defense` object. ALLOW does not override gateway denial. DECEIVE currently yields BLOCK; implementing decoy execution requires coordination with Zhaotong and the integration developer. Real LLM analysis is outside this adapter milestone.
+The context contains `target_customer_id`. Return the existing `Attack` dataclass with `message` and `category`. Your module generates text; the existing orchestrator sends it to the enterprise assistant.
 
-## Zhaotong — database/security
+**See your work:** Security Lab → **Attack Simulator** → **Run simulated attack**. Look for your generated prompt and the assistant's response. Then open Defense Analysis to see how it was handled.
 
-Own `database/`, `security/`, and dedicated tests such as `tests/test_security.py` and `tests/test_repository.py`.
+**Hand off:** your module, red-specific tests, example requests, and expected outcomes. You do not need to edit React or the database.
 
-1. Plan a reproducible synthetic SQLite schema and seed script for customers, policies and claims. Keep real and decoy data distinguishable when decoys are introduced later.
-2. Preserve `SecurityGateway.authorize(user: User, action: ProposedAction) -> AuthorizationResult`. Deny cross-customer and unsupported requests independently of blue recommendations.
-3. Preserve repository `read(action: ProposedAction) -> str`. Supply a compatible repository implementation for injection into `EnterpriseAgent`; retain the current default implementation until the integration developer wires the replacement.
-4. Preserve `AuditLog.record(event)` and `list_events() -> list[SecurityEvent]`. Coordinate durable storage, redaction and error behavior. Tests should use temporary databases and isolated fixtures.
-5. Keep `security.auth.DEMO_USERS` available during the demo. Propose a verified-session interface before replacing demo identity selection. The frontend's selected ID is not proof of identity.
-6. Test own-record reads, cross-customer denial, unsupported actions, missing records and audit round trips. Hand off initialization instructions and an example dependency-injection setup.
+## Reya — analyze the request
 
-The API does not access storage directly. It resolves IDs against `DEMO_USERS`, then calls the orchestrator. Authentication, durable logs and decoy routing are future integration changes, not implemented by this adapter.
+**Open:** [agents/blue_agent.py](agents/blue_agent.py).
 
-## Frontend/chatbot/API/integration owner
+**Today:** it checks whether the requested customer differs from the requesting customer.
 
-Own `frontend/`, `main.py`, `app.py`, `orchestrator.py`, `agents/enterprise_agent.py`, evaluation, and adapter tests. Maintain HTTP serialization, loading/error behavior, and the guarded execution pipeline. Keep Streamlit runnable while React is introduced. Coordinate all shared schema changes; do not change teammate implementations to accommodate the UI.
+**First task:** test legitimate and cross-customer requests, then develop your detection logic behind the same method. Start with deterministic cases so the team can verify decisions before adding an LLM.
 
-## Handoff checklist
+**Keep this interface:**
 
-- Preserve the current dataclasses and public signatures, including enterprise `source` keyword support.
-- Document input, output, failure behavior, fixtures, and any setup in the PR.
-- Run `python -m unittest discover -s tests -v` in the installed virtual environment.
-- Run `npm ci --prefix frontend` then `npm run build --prefix frontend` for frontend/integration changes.
-- Test C001 own policy/claims, a C001 request for C002, and one red fixture. Confirm the same event appears in Blue Team Results and Audit Log.
-- Keep generated databases, `.env`, virtual environments, `node_modules`, build output and secrets out of Git.
+```python
+BlueAgent.analyze_event(event) -> DefenseDecision
+```
+
+Read the event's user, message, action, and source. Return a recommendation (`ALLOW`, `BLOCK`, or `DECEIVE`), risk (`low`, `medium`, or `high`), and reason. At this point, authorization has not run yet. Do not execute database actions or mutate the event.
+
+**See your work:** run an attack, then open Security Lab → **Defense Analysis** → **Blue-team recommendation**. Normal member requests also trigger your analysis automatically. There is no separate blue-team button.
+
+The neighboring **Traditional authorization** result belongs to Zhaotong. Your ALLOW cannot override his denial. DECEIVE currently blocks; actual decoy responses require coordinated integration later.
+
+**Hand off:** your module, blue-specific tests, and examples showing expected recommendation/risk/reason. Coordinate new output fields before changing shared models.
+
+## Zhaotong — provide records and enforce access
+
+**Start with:** [database/repository.py](database/repository.py) and [security/gateway.py](security/gateway.py). You also own the other files in `database/` and `security/`.
+
+**Today:** records are stored in memory; the gateway only allows supported reads of the requesting customer's own records.
+
+**First task:** build a small synthetic SQLite store and a repeatable seed script. Keep the existing repository interface, then test that the gateway still denies other-customer access. Coordinate wiring the SQLite implementation with the integration owner.
+
+**Keep these interfaces:**
+
+```python
+repository.read(action) -> str
+SecurityGateway.authorize(user, action) -> AuthorizationResult
+AuditLog.record(event)
+AuditLog.list_events() -> list[SecurityEvent]
+```
+
+Keep `security.auth.DEMO_USERS` available until we agree on authentication changes. Preserve the existing shared dataclasses. Add tests using temporary databases so tests do not affect demo data.
+
+**See your work:**
+
+- Member Portal → **My Policy / My Claims** → retrieve a record.
+- Security Lab → **Defense Analysis** → **Traditional authorization**.
+- Security Lab → **Audit Log** → recorded events.
+
+Test both own-record access and cross-customer denial, including when blue recommends ALLOW. Plan authentication, persistent audit storage, and decoys as subsequent steps.
+
+**Hand off:** implementation, seed/setup commands, tests, and any instructions needed to activate the new repository.
+
+## Integration owner — connect everything
+
+Own `frontend/`, `main.py`, `orchestrator.py`, `agents/enterprise_agent.py`, evaluation, and API tests. Keep the UI connected, integrate compatible teammate modules, and coordinate shared contract changes. `app.py` is the older Streamlit fallback; teammates can ignore it for the main CometCare workflow.
+
+## How to deliver your work
+
+1. Start from an updated, clean `main`, then create your own branch, for example `git switch -c vanessa/red-fixtures` (use a name appropriate to your task).
+2. Edit your assigned module and add its tests. Preserve the current method arguments and return types.
+3. In the activated virtual environment, run `python -m unittest discover -s tests -v`.
+4. Try your behavior in CometCare using the paths above. Python saves reload the backend and clear its in-memory events.
+5. Commit and push your branch, then open a pull request into `main`. Explain what changed, how to test it, and any setup needed. The integration owner helps connect it.
+
+Everyone runs a separate local copy. You see a teammate's work after it is merged and you pull it—not simply because they saved their file.
+
+Keep all records synthetic and secrets out of Git. If you need exact fields or API details, use the [integration reference](docs/INTEGRATION.md); you do not need to read it all before starting.
