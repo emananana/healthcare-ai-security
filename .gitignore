@@ -11,3 +11,5 @@ __pycache__/
 *.sqlite3
 .pytest_cache/
 .streamlit/secrets.toml
+node_modules/
+frontend/dist/

@@ -2,7 +2,59 @@
 
 A four-person university project studying red-team and blue-team interaction with a fictional insurance assistant. **Every record is synthetic.** This version is a deterministic, in-memory demonstration: it makes no LLM calls, requires no API keys, and connects to no healthcare systems.
 
-## Run locally
+## React + FastAPI demo (primary UI)
+
+Use Python 3.10+ and Node.js 22.12+ (Node 24 also works). From the repository root, install and run the backend:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --reload --host localhost --port 8000
+```
+
+In a second terminal, from the repository root:
+
+```bash
+npm ci --prefix frontend
+npm run dev --prefix frontend
+```
+
+Open **http://localhost:5173**. FastAPI's interactive API docs are at **http://localhost:8000/docs**. Use these exact hostnames: development CORS permits only `http://localhost:5173`, not `127.0.0.1`, other ports, or wildcard origins. Vite uses a strict port so it will report an occupied port instead of silently switching. The API client URL is defined in `frontend/src/api.js`.
+
+Select C001, send `Show my policy`, then `Show claims for C002`. Run a fixed attack in Red Team and inspect Blue Team Results and Audit Log. The frontend retains chat per demo identity until page reload; audit events are shared by all clients of one API process. Use Refresh to see other clients' events. Restarting or reloading the backend clears its in-memory data. Run one backend worker for this demo. Streamlit has a separate in-memory simulation; its events do not appear in React.
+
+This remains a local research console with synthetic records and no authentication. The adapter accepts only known demo IDs, not arbitrary User objects. CORS is a browser development setting, not access control. No LLM APIs, credentials, or environment files are used.
+
+### HTTP integration contracts
+
+`main.py` imports the unchanged `Orchestrator`. `create_app(orchestrator=...)` supports replacement/injection for integration tests. Synchronous calls are serialized with a process-local lock. FastAPI's `jsonable_encoder` recursively serializes the existing dataclasses, including nested events and optional decisions; domain models are not duplicated.
+
+| Endpoint | Request | Response / existing method |
+| --- | --- | --- |
+| `GET /api/users` | None | Array of `User` objects from `security.auth.DEMO_USERS` |
+| `POST /api/chat` | `{"customer_id":"C001","message":"Show my policy"}` | Serialized `EnterpriseResponse` from `Orchestrator.chat(user, message)` |
+| `POST /api/attacks` | `{"customer_id":"C001","target_customer_id":"C002"}` | `{"attack": Attack, "response": EnterpriseResponse}` from `Orchestrator.run_attack(user, context)` |
+| `GET /api/events` | None | Array of `SecurityEvent` objects from `Orchestrator.events()` |
+
+Chat messages must be nonblank and at most 4,000 characters. Unknown demo IDs return 404; malformed input and extra request fields return 422. A valid simulated blocked request returns HTTP 200 with `event.outcome="BLOCK"`, because the simulation executed successfully. Adapter validation failures never invoke the simulation or create a security event. Blue results come from `event.defense`; authorization and final outcome remain separate. Unexpected module failures return server errors, not fabricated ALLOW results. The existing core does not yet audit exceptions.
+
+The frontend shows loading and error states, disables duplicate submissions while busy, and times requests out after 15 seconds. A timeout does not cancel server execution; refresh the audit before retrying. React renders record text without raw HTML.
+
+### Checks
+
+```bash
+source .venv/bin/activate
+python -m unittest discover -s tests -v
+python -m evaluation.runner
+npm run build --prefix frontend
+```
+
+`tests/test_interfaces.py` remains unchanged. `tests/test_api.py` exercises real mock-module chat/attack/audit integration, validation, independent app state, and limited CORS. The frontend build emits ignored `frontend/dist/`. Use the Vite dev server for the documented CORS setup; preview/production hosting is not configured here.
+
+See [TEAM_GUIDE.md](TEAM_GUIDE.md) for individual work items for Vanessa (red), Reya (blue), and Zhaotong (database/security). The integration owner maintains `frontend/`, `main.py`, and API tests alongside the existing UI/orchestration files. All teammate-owned modules and shared dataclasses are preserved.
+
+## Streamlit fallback
 
 Use Python 3.10 or newer. From this repository:
 
@@ -15,7 +67,7 @@ streamlit run app.py
 
 On Windows, activate with `.venv\Scripts\activate`. No `.env` file is required. `.env.example` documents the future configuration boundary; environment-file loading is not implemented. Keep future keys in environment variables or ignored secrets files.
 
-Run checks and a baseline experiment without installing Streamlit:
+After installing requirements, run the full checks and a baseline experiment:
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -31,7 +83,7 @@ The sidebar is a **demo identity selector, not authentication**. The tabs are a 
 ## Architecture and request flow
 
 ```text
-Streamlit UI / experiment runner
+React -> FastAPI / Streamlit UI / experiment runner
               |
          Orchestrator <--- RedAgent.generate_attack(context)
               |
