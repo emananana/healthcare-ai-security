@@ -1,10 +1,6 @@
 
-"""Manual live smoke test for the CometCare red agent.
 
-Run from the repository root:
-    python -m scripts.smoke_red
-"""
-
+"""Manual live smoke test for all three red-agent attack types."""
 
 from settings import Settings
 from agents.red_agent import LiveRedAgent
@@ -24,12 +20,30 @@ def main():
         model=settings.red_model,
     )
 
-    attack = agent.generate_attack({"target_customer_id": "C002"})
+    attack_types = [
+        "cross_customer_request",
+        "prompt_injection",
+        "instruction_hijacking",
+    ]
 
-    print("Generated attack:")
-    print(f"Category: {attack.category}")
-    print(f"Message: {attack.message}")
+    for attack_type in attack_types:
+        print("\n" + "=" * 60)
+        print(f"Testing: {attack_type}")
+        print("=" * 60)
+
+        try:
+            attack = agent.generate_attack({
+                "target_customer_id": "C002",
+                "attack_type": attack_type,
+            })
+
+            print(f"Category: {attack.category}")
+            print(f"Message: {attack.message}")
+
+        except Exception as error:
+            print(f"FAILED: {error}")
 
 
 if __name__ == "__main__":
     main()
+
