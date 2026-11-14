@@ -2,6 +2,20 @@
 
 **Your first deliverable:** one real LLM-generated synthetic attack, independently testable. No adaptive loop yet.
 
+## PR #2 integration check
+
+The PR branch now wires `LiveRedAgent` in live mode and exposes all three categories in Attack Simulator. Mock mode still uses the fixed cross-customer fixture. This does not change the deployed app until the PR is merged and deployed.
+
+Use the shared `config.py` configuration; the duplicate `settings.py` has been removed. With your own key configured, run from the repository root:
+
+```bash
+python -m scripts.smoke_red
+# Optional: three generation calls, one per type
+python -m scripts.smoke_red --attack-type all
+```
+
+The default makes one generation call only. These commands do not submit attacks to the enterprise assistant. A generation failure returns a nonzero exit status. Next run the local app in live mode, choose a type in Attack Simulator, and inspect the response, defense and audit. Blue remains mock. Failed generation reports an error and creates no fabricated attack event.
+
 ## Start here
 
 1. Follow [setup in the main context](../PROJECT_CONTEXT.md), create branch `vanessa/red-llm`, and run the existing tests.

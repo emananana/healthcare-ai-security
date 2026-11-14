@@ -1,5 +1,7 @@
 """Local research-console adapter; preserves all simulation module contracts."""
 from threading import Lock
+from typing import Literal
+from agents.red_agent import LiveRedAgent
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from hosting import TeamAccessMiddleware
@@ -35,6 +37,7 @@ class AttackRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     customer_id: str
     target_customer_id: str
+    attack_type: Literal["cross_customer_request", "prompt_injection", "instruction_hijacking"] = "cross_customer_request"
 
 
 def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings | None = None) -> FastAPI:
@@ -72,7 +75,10 @@ def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings |
     def status():
         return {"enterprise_mode": settings.mode,
                 "enterprise_model": settings.enterprise_model if settings.mode == "live" else None,
-                "red_mode": "mock", "blue_mode": "mock"}
+                "red_mode": "live" if isinstance(simulation.red, LiveRedAgent) else "mock",
+                "red_model": simulation.red.model if isinstance(simulation.red, LiveRedAgent) else None,
+                "attack_types": list(LiveRedAgent.ATTACK_TYPES) if isinstance(simulation.red, LiveRedAgent) else ["cross_customer_request"],
+                "blue_mode": "mock"}
 
     def demo_user(customer_id: str):
         for user in DEMO_USERS:
@@ -94,9 +100,11 @@ def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings |
     def attack(body: AttackRequest):
         user = demo_user(body.customer_id)
         demo_user(body.target_customer_id)
+        if not isinstance(simulation.red, LiveRedAgent) and body.attack_type != "cross_customer_request":
+            raise HTTPException(status_code=422, detail="Mock red mode supports only cross-customer requests.")
         with lock:
             generated, response = simulation.run_attack(
-                user, {"target_customer_id": body.target_customer_id}
+                user, {"target_customer_id": body.target_customer_id, "attack_type": body.attack_type}
             )
             return jsonable_encoder({"attack": generated, "response": response})
 

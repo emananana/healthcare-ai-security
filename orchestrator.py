@@ -1,6 +1,7 @@
 """UI/experiment facade. Inject teammate implementations at this boundary."""
 from agents.enterprise_agent import EnterpriseAgent
 from agents.red_agent import RedAgent
+from llm.client import LLMError
 from shared.models import Attack, EnterpriseResponse, User
 
 class Orchestrator:
@@ -12,7 +13,11 @@ class Orchestrator:
         return self.enterprise.handle_message(user, message)
 
     def run_attack(self, user: User, context: dict[str, str]) -> tuple[Attack, EnterpriseResponse]:
-        attack = self.red.generate_attack(context)
+        try:
+            attack = self.red.generate_attack(context)
+        except LLMError as exc:
+            # No generated request exists yet: do not fabricate an audited attack.
+            raise LLMError(f"Attack generation failed; no attack was submitted. {exc}") from None
         response = self.enterprise.handle_message(user, attack.message, source="red_team")
         return attack, response
 
