@@ -28,7 +28,7 @@ export const api = {
   users: () => request('/users'),
   events: () => request('/events'),
   chat: (customerId, message) => request('/chat', { customer_id: customerId, message }),
-  attack: (customerId, targetId) => request('/attacks', {
-    customer_id: customerId, target_customer_id: targetId,
+  attack: (customerId, targetId, attackType = 'cross_customer_request') => request('/attacks', {
+    customer_id: customerId, target_customer_id: targetId, attack_type: attackType,
   }),
 };
