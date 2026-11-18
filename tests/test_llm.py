@@ -177,7 +177,7 @@ class ProviderTests(unittest.TestCase):
         self.assertNotIn('test-secret', repr(settings))
         response = TestClient(create_app(settings=settings)).get('/api/status')
         self.assertEqual(response.json()['enterprise_mode'], 'live')
-        self.assertEqual(response.json()['blue_mode'], 'mock')
+        self.assertEqual(response.json()['blue_mode'], 'live')
         self.assertNotIn('test-secret', response.text)
 
 if __name__ == '__main__':

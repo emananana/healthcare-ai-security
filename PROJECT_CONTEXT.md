@@ -17,7 +17,7 @@ The system uses React, FastAPI, Python agents and eventually SQLite. No real hea
 
 ## What works now
 
-Eman's enterprise Groq chatbot and shared Render app are working, as tested by Eman. Red and blue are still fixed mocks; records and audit are in memory. The team login protects the shared research console but is not individual customer authentication. DECEIVE currently blocks; actual decoys, adaptation and full research metrics are still to build.
+Eman's enterprise Groq chatbot and shared Render app are working, as tested by Eman. Live mode now connects the enterprise, red and blue agents through Groq; offline mode keeps their mocks. Records and audit are in memory. The team login protects the shared research console but is not individual customer authentication. DECEIVE currently blocks; actual decoys, adaptation and full research metrics are still to build.
 
 Shared app: **https://healthcare-ai-security.onrender.com/**. Username `cometcare`; Eman provides the password privately. Its code comes from deployed `main`, not unmerged branches. Free hosting can sleep and current data resets on restart.
 
@@ -25,11 +25,11 @@ Shared app: **https://healthcare-ai-security.onrender.com/**. Username `cometcar
 
 Cloning this repository includes Eman's enterprise chatbot. You can run it locally in live mode with your own key; you do not need to connect to Eman's laptop or Render.
 
-- **Vanessa:** test that her live generator returns a valid attack for a supplied target. Later, run that attack through the local enterprise assistant with the mock blue agent still in place.
+- **Vanessa:** test that her live generator returns a valid attack for a supplied target. Later, run that attack through the local enterprise assistant with the configured blue detector.
 - **Reya:** use hand-written SecurityEvent examples such as “C001 requests C002's claims.” A detector accepts an event regardless of whether a human, fixture or red LLM produced its text. Test her live detector directly; no live red agent is needed.
 - **Zhaotong:** test a temporary SQLite database and fixed user/action pairs without any LLM.
 
-Offline unit tests use fake provider replies to check code behavior; explicit live smoke checks test actual models. These checks do not establish real-world detection accuracy. Eman then connects each completed module to the local app and runs end-to-end checks before merging/deploying. The current app will keep using mock red/blue until that wiring is added.
+Offline unit tests use fake provider replies to check code behavior; explicit live smoke checks test actual models. These checks do not establish real-world detection accuracy. Eman then connects each completed module to the local app and runs end-to-end checks before merging/deploying. Live mode selects the integrated red and blue agents; mock mode remains offline.
 
 ## Roadmap — implement in this order
 
@@ -56,7 +56,7 @@ For Stage 5, replay the same held-out labeled requests across conditions; evalua
 4. **Eman reviews, wires, and merges it.** Shared contract changes are coordinated through Eman.
 5. Render deploys `main`; Eman verifies the live result. Now everyone sees it at the shared URL.
 
-A branch push alone does not enable a live agent. Current setup still selects mock red/blue; Eman must explicitly select new implementations and update the UI mode labels. Local development can test those implementations directly before that wiring exists.
+A branch push alone does not enable a live agent. The first live red/blue implementations are now wired; future replacements still need integration checks. Local development can test those implementations directly before that wiring exists.
 
 ## One Groq setup
 
@@ -141,7 +141,7 @@ npm ci --prefix frontend
 npm run dev --prefix frontend
 ```
 
-Open http://localhost:5173/. Default mode is mock. With live environment variables, the enterprise assistant uses Groq. **The current setup still selects mock red/blue agents. Adding a live class alone will not change the app.** Use your personal smoke script first; Eman connects the live implementation and updates mode labels during integration.
+Open http://localhost:5173/. Default mode is mock. With live environment variables, the enterprise, red and blue agents use Groq. Run your personal smoke script first, then test chat and attacks in the app. Provider failures are errors, not successful detections; submitted requests that fail remain PENDING in the audit log.
 
 Try C001 → `Show my policy`, then `Show claims for C002`. Security Lab → Attack Simulator runs red; Defense Analysis shows blue and separate authorization results; Audit Log records events. Saving Python may reload the backend and clear the current in-memory log.
 

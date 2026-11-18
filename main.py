@@ -2,6 +2,7 @@
 from threading import Lock
 from typing import Literal
 from agents.red_agent import LiveRedAgent
+from agents.blue_agent import LiveBlueAgent
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from hosting import TeamAccessMiddleware
@@ -78,7 +79,8 @@ def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings |
                 "red_mode": "live" if isinstance(simulation.red, LiveRedAgent) else "mock",
                 "red_model": simulation.red.model if isinstance(simulation.red, LiveRedAgent) else None,
                 "attack_types": list(LiveRedAgent.ATTACK_TYPES) if isinstance(simulation.red, LiveRedAgent) else ["cross_customer_request"],
-                "blue_mode": "mock"}
+                "blue_mode": "live" if isinstance(simulation.enterprise.blue_agent, LiveBlueAgent) else "mock",
+                "blue_model": simulation.enterprise.blue_agent.model if isinstance(simulation.enterprise.blue_agent, LiveBlueAgent) else None}
 
     def demo_user(customer_id: str):
         for user in DEMO_USERS:

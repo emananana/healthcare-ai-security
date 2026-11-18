@@ -45,7 +45,12 @@ class EnterpriseAgent:
             # PENDING means execution did not finish, not a successful blue detection.
             self.audit.record(event)
             raise
-        event.defense = self.blue_agent.analyze_event(event)
+        try:
+            event.defense = self.blue_agent.analyze_event(event)
+        except LLMError as exc:
+            # A failed analysis is unfinished, not an ALLOW or a detected attack.
+            self.audit.record(event)
+            raise LLMError(f"Blue-team analysis failed; no record was accessed. {exc}") from None
         event.authorization = self.gateway.authorize(user, event.action)
         if event.defense.recommendation == "ALLOW" and event.authorization.allowed:
             record = self.repository.read(event.action)
