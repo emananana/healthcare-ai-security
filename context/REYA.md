@@ -2,6 +2,12 @@
 
 **Your first deliverable:** an independently testable live LLM detector that returns a valid defense decision.
 
+## Integration status
+
+Live mode now injects your detector into the enterprise pipeline. Chat and red-team requests automatically produce blue recommendations in Defense Analysis. Blue provider/validation failures return an error and record a PENDING audit event without accessing records. Mock mode remains offline. The shared app receives this wiring after merge and successful deployment.
+
+Run `python -m scripts.smoke_blue` explicitly with your local key for six live development cases. Offline tests use fake replies and do not measure detection accuracy.
+
 ## Start here
 
 1. Follow [setup in the main context](../PROJECT_CONTEXT.md), create branch `reya/blue-llm`, and run the tests.
