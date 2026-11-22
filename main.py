@@ -12,6 +12,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from database.repository import SQLiteRepository
 from config import Settings
 from llm.client import LLMError
 from llm.setup import configured_orchestrator
@@ -74,7 +75,9 @@ def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings |
 
     @api.get("/api/status")
     def status():
-        return {"enterprise_mode": settings.mode,
+        return {"storage_mode": "sqlite" if isinstance(simulation.enterprise.repository, SQLiteRepository) else "memory",
+                "hosted": settings.hosted,
+                "enterprise_mode": settings.mode,
                 "enterprise_model": settings.enterprise_model if settings.mode == "live" else None,
                 "red_mode": "live" if isinstance(simulation.red, LiveRedAgent) else "mock",
                 "red_model": simulation.red.model if isinstance(simulation.red, LiveRedAgent) else None,

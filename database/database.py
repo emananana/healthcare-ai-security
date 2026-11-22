@@ -9,7 +9,7 @@ from database.models import SCHEMA
 @contextmanager
 def connect(db_path):
     path = Path(db_path)
-    if str(path) == ':memory':
+    if str(path) == ':memory:':
         raise ValueError('Use a file-backend SQLite path for per-operation connection')
     connection = sqlite3.connect(str(path), timeout=10)
     connection.row_factory = sqlite3.Row

@@ -58,7 +58,7 @@ class TestTraditionalSecurity(unittest.TestCase):
         )
 
         self.assertEqual(response.event.outcome, "BLOCK")
-        repository.read.asser_not_called()
+        repository.read.assert_not_called()
 
     def test_blue_block_prevents_read(self):
         repository = Mock()
