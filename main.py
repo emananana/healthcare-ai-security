@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from database.repository import SQLiteRepository
+from database.database import connect
+from shared.models import User
 from config import Settings
 from llm.client import LLMError
 from llm.setup import configured_orchestrator
@@ -85,15 +87,26 @@ def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings |
                 "blue_mode": "live" if isinstance(simulation.enterprise.blue_agent, LiveBlueAgent) else "mock",
                 "blue_model": simulation.enterprise.blue_agent.model if isinstance(simulation.enterprise.blue_agent, LiveBlueAgent) else None}
 
+    def available_demo_users():
+        """Demo identities only; this list is not customer authentication."""
+        repository = simulation.enterprise.repository
+        if isinstance(repository, SQLiteRepository):
+            with connect(repository.db_path) as connection:
+                rows = connection.execute(
+                    "SELECT customer_id, display_name FROM customers ORDER BY customer_id"
+                ).fetchall()
+            return [User(row["customer_id"], row["display_name"]) for row in rows]
+        return list(DEMO_USERS)
+
     def demo_user(customer_id: str):
-        for user in DEMO_USERS:
+        for user in available_demo_users():
             if user.customer_id == customer_id:
                 return user
         raise HTTPException(status_code=404, detail="Unknown demo customer")
 
     @api.get("/api/users")
     def users():
-        return jsonable_encoder(DEMO_USERS)
+        return jsonable_encoder(available_demo_users())
 
     @api.post("/api/chat")
     def chat(body: ChatRequest):
@@ -112,6 +125,27 @@ def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings |
                 user, {"target_customer_id": body.target_customer_id, "attack_type": body.attack_type}
             )
             return jsonable_encoder({"attack": generated, "response": response})
+
+    @api.post("/api/module-checks")
+    def module_checks():
+        """Run existing offline helpers in an isolated disposable database."""
+        from tempfile import TemporaryDirectory
+        from evaluation.sqlite_runner import run_sqlite_experiment
+        from security.roles import AccessContext, authorize_role
+
+        with TemporaryDirectory(prefix="cometcare-check-") as directory:
+            report = run_sqlite_experiment(Path(directory) / "checks.sqlite3")
+        cases = [
+            ("Customer: own policy", AccessContext("C001", "customer"), "policy", "C001"),
+            ("Customer: another customer's claims", AccessContext("C001", "customer"), "claims", "C002"),
+            ("Staff: assigned customer", AccessContext("staff-demo", "staff", {"C002"}), "claims", "C002"),
+            ("Staff: unassigned customer", AccessContext("staff-demo", "staff", {"C002"}), "claims", "C001"),
+            ("Admin: audit permission", AccessContext("admin-demo", "admin"), "audit", "C001"),
+        ]
+        return {"evaluation": report, "roles": [
+            {"scenario": name, "allowed": authorize_role(user, resource, target)}
+            for name, user, resource, target in cases
+        ], "mode": "offline", "isolated": True}
 
     @api.get("/api/events")
     def events():

@@ -7,8 +7,8 @@
 The app now selects SQLite records and audit when COMETCARE_DB_PATH is set.
 Startup safely repeats the seed without resetting existing records. Docker
 sets /app/data/cometcare.sqlite3; free Render storage remains temporary.
-Local audit survives app restarts when the file is retained. The portal still
-lists C001/C002; 25 seeded records do not add authenticated identities.
+Local audit survives app restarts when the file is retained. The SQLite portal selector lists all 25 seeded customers; these demo
+identities are not authenticated sessions.
 The role helper is not connected to sessions. See PROJECT_CONTEXT.md for
 the local run command. This wiring reaches the shared app only after merge
 and deployment.

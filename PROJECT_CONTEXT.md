@@ -219,8 +219,9 @@ python -m uvicorn main:app --reload --host localhost --port 8000
 
 This works with mock agents (no Groq key) or existing live-mode settings.
 Startup creates missing parent directories and seeds 25 synthetic customers
-without overwriting existing records. The portal retains its existing C001/C002
-demo selector; the other seeded customers are not new login identities.
+without overwriting existing records. The portal lists all customers from SQLite (C001–C025 in the seed). Select a
+demo customer to view their own records; these are not authenticated logins.
+In-memory mode retains the two original demo customers.
 Policy/claim responses remain text, preserving the API contract.
 
 The Docker image sets the path to /app/data/cometcare.sqlite3. On free Render,
@@ -229,3 +230,7 @@ on startup; audit history is lost if the file disappears. No volume or paid
 service is provisioned. Local SQLite persists while its file is retained.
 The role helper is not connected to authenticated sessions. Decoys and the
 three-condition research comparison remain future integration work.
+
+Security Lab → Module Checks runs the existing SQLite runner in a disposable database,
+plus standalone role-helper examples. Results are offline mock-pipeline checks, not
+live detector accuracy or authenticated role enforcement. Shared audit is untouched.

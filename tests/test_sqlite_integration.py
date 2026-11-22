@@ -37,6 +37,41 @@ class SQLiteIntegrationTests(unittest.TestCase):
         with connect(self.path) as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM customers").fetchone()[0], 25)
 
+    def test_all_seeded_customers_can_view_own_records_but_not_others(self):
+        client = TestClient(create_app(settings=self.settings))
+        users = client.get("/api/users").json()
+        self.assertEqual([u["customer_id"] for u in users],
+                         [f"C{i:03}" for i in range(1, 26)])
+        for i, user in enumerate(users, 1):
+            for resource, record_id in [("policy", f"P{i:03}"), ("claims", f"CL{i:03}")]:
+                response = client.post("/api/chat", json={
+                    "customer_id": user["customer_id"], "message": f"Show my {resource}"})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["event"]["outcome"], "ALLOW")
+                self.assertIn(record_id, response.json()["message"])
+        response = client.post("/api/chat", json={
+            "customer_id": "C025", "message": "Show claims for C024"})
+        self.assertEqual(response.json()["event"]["outcome"], "BLOCK")
+        self.assertFalse(response.json()["event"]["authorization"]["allowed"])
+        self.assertEqual(client.post("/api/attacks", json={
+            "customer_id": "C025", "target_customer_id": "C024"}).status_code, 200)
+        for route, payload in [
+            ("/api/chat", {"customer_id": "C999", "message": "Show my policy"}),
+            ("/api/attacks", {"customer_id": "C025", "target_customer_id": "C999"}),
+        ]:
+            self.assertEqual(client.post(route, json=payload).status_code, 404)
+
+    def test_module_checks_are_offline_and_isolated(self):
+        client = TestClient(create_app(settings=self.settings))
+        with patch("llm.client.GroqClient.complete", side_effect=AssertionError("No live calls")):
+            response = client.post("/api/module-checks", json={})
+        self.assertEqual(response.status_code, 200)
+        report = response.json()
+        self.assertEqual(report["evaluation"]["metrics"]["total"], 8)
+        self.assertTrue(all(r["expected"] == r["actual"] for r in report["evaluation"]["results"]))
+        self.assertEqual([r["allowed"] for r in report["roles"]], [True, False, True, False, True])
+        self.assertEqual(client.get("/api/events").json(), [])
+
     def test_failure_audit_survives_recreation_and_does_not_read(self):
         simulation = configured_orchestrator(self.settings)
         simulation.enterprise.blue_agent = Mock()

@@ -40,6 +40,16 @@ class HostingTests(unittest.TestCase):
         self.assertEqual(self.client.post('/api/chat', auth=self.auth, json=body).status_code, 429)
         self.assertEqual(len(self.client.get('/api/events', auth=self.auth).json()), 10)
 
+    def test_module_checks_require_login_and_share_rate_limit(self):
+        self.assertEqual(self.client.post('/api/module-checks', json={}).status_code, 401)
+        response = self.client.post('/api/module-checks', json={}, auth=self.auth,
+                                    headers={'Origin': 'https://evil.example'})
+        self.assertEqual(response.status_code, 403)
+        for _ in range(10):
+            self.assertEqual(self.client.post('/api/module-checks', json={}, auth=self.auth).status_code, 200)
+        self.assertEqual(self.client.post('/api/module-checks', json={}, auth=self.auth).status_code, 429)
+        self.assertEqual(self.client.get('/api/events', auth=self.auth).json(), [])
+
     def test_missing_password_rejected(self):
         with self.assertRaises(ValueError):
             create_app(settings=Settings(hosted=True))

@@ -25,6 +25,7 @@ async function request(path, body) {
 
 export const api = {
   status: () => request('/status'),
+  moduleChecks: () => request('/module-checks', {}),
   users: () => request('/users'),
   events: () => request('/events'),
   chat: (customerId, message) => request('/chat', { customer_id: customerId, message }),
