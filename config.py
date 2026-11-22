@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 class Settings:
     mode: str = "mock"
     hosted: bool = False
+    db_path: str = ""
     team_password: str = field(default="", repr=False)
     api_key: str = field(default="", repr=False)
     enterprise_model: str = "openai/gpt-oss-20b"
@@ -20,6 +21,7 @@ class Settings:
             raise ValueError("COMETCARE_MODE must be mock or live")
         settings = cls(
             mode=mode,
+            db_path=os.getenv("COMETCARE_DB_PATH", "").strip(),
             hosted=os.getenv("COMETCARE_HOSTED", "false").lower() == "true",
             team_password=os.getenv("TEAM_PASSWORD", ""),
             api_key=os.getenv("GROQ_API_KEY", "").strip(),

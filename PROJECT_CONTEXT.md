@@ -13,13 +13,13 @@
 
 Can an LLM defender plus traditional access controls protect a fictional insurance assistant from an opposing LLM attacker? We test synthetic prompt injection, instruction hijacking and attempts to get another fictional customer's records. We also test deceptive responses containing isolated dummy records.
 
-The system uses React, FastAPI, Python agents and eventually SQLite. No real healthcare data or external attack targets. CometCare is not an official UT Dallas service.
+The system uses React, FastAPI, Python agents and SQLite. No real healthcare data or external attack targets. CometCare is not an official UT Dallas service.
 
 ## What works now
 
-Eman's enterprise Groq chatbot and shared Render app are working, as tested by Eman. Live mode now connects the enterprise, red and blue agents through Groq; offline mode keeps their mocks. Records and audit are in memory. The team login protects the shared research console but is not individual customer authentication. DECEIVE currently blocks; actual decoys, adaptation and full research metrics are still to build.
+Eman's enterprise Groq chatbot and shared Render app are working, as tested by Eman. Live mode now connects the enterprise, red and blue agents through Groq; offline mode keeps their mocks. SQLite records and audit are available through COMETCARE_DB_PATH; leaving it blank keeps in-memory defaults. The Docker deployment selects SQLite on its temporary disk. The team login protects the shared research console but is not individual customer authentication. DECEIVE currently blocks; actual decoys, adaptation and full research metrics are still to build.
 
-Shared app: **https://healthcare-ai-security.onrender.com/**. Username `cometcare`; Eman provides the password privately. Its code comes from deployed `main`, not unmerged branches. Free hosting can sleep and current data resets on restart.
+Shared app: **https://healthcare-ai-security.onrender.com/**. Username `cometcare`; Eman provides the password privately. Its code comes from deployed `main`, not unmerged branches. Free hosting can sleep and its SQLite files may be lost on restart or redeploy; missing databases are reseeded with synthetic records, but old audit events cannot be recovered.
 
 ## How to test before everyone is finished
 
@@ -143,7 +143,7 @@ npm run dev --prefix frontend
 
 Open http://localhost:5173/. Default mode is mock. With live environment variables, the enterprise, red and blue agents use Groq. Run your personal smoke script first, then test chat and attacks in the app. Provider failures are errors, not successful detections; submitted requests that fail remain PENDING in the audit log.
 
-Try C001 → `Show my policy`, then `Show claims for C002`. Security Lab → Attack Simulator runs red; Defense Analysis shows blue and separate authorization results; Audit Log records events. Saving Python may reload the backend and clear the current in-memory log.
+Try C001 → `Show my policy`, then `Show claims for C002`. Security Lab → Attack Simulator runs red; Defense Analysis shows blue and separate authorization results; Audit Log records events. Reloading clears in-memory logs. SQLite logs survive local reloads while the same database file is retained.
 
 ### 5. Test, push your branch, and ask Eman to review
 
@@ -188,7 +188,7 @@ Every record read requires blue ALLOW and independent gateway authorization. DEC
 
 Keep RedAgent() and BlueAgent() offline-compatible so default Orchestrator and original tests work. Current team design: add LiveRedAgent(client, model) and LiveBlueAgent(client, model) in the respective owned modules, with the same generate_attack/analyze_event signatures. These are planned classes, not existing classes. Eman selects them in llm/setup.py after review. Explicit smoke scripts can instantiate them directly; no frontend required.
 
-Zhaotong should retain MockRepository and add SQLiteRepository(db_path) with the same read contract. This is a planned class. Use injected dependencies to test integration without modifying composition files.
+Zhaotong should retain MockRepository and add SQLiteRepository(db_path) with the same read contract. This class is implemented. Use injected dependencies to test integration without modifying composition files.
 
 ### Shared LLM helper
 
@@ -206,3 +206,26 @@ Local contributors use their own keys; Render's key serves integrated agents aft
 Give your helper this file and your personal context file. Each personal file ends with a starter prompt. Ask it to inspect actual code, work only on the current stage, preserve teammate-owned files and contracts, explain changes, and run tests. Do not paste secrets or authorize the helper to implement everyone's tasks. No autonomous commits, pushes or deployments unless you request them.
 
 Historical files in `docs/archive/` are not the active task list. This file and the four personal files are the current plan.
+
+
+### SQLite integration (PR #4)
+
+Local backend, from the repository root:
+
+```bash
+export COMETCARE_DB_PATH="$PWD/data/cometcare.sqlite3"
+python -m uvicorn main:app --reload --host localhost --port 8000
+```
+
+This works with mock agents (no Groq key) or existing live-mode settings.
+Startup creates missing parent directories and seeds 25 synthetic customers
+without overwriting existing records. The portal retains its existing C001/C002
+demo selector; the other seeded customers are not new login identities.
+Policy/claim responses remain text, preserving the API contract.
+
+The Docker image sets the path to /app/data/cometcare.sqlite3. On free Render,
+this is **temporary storage**, not durable hosting: missing records are reseeded
+on startup; audit history is lost if the file disappears. No volume or paid
+service is provisioned. Local SQLite persists while its file is retained.
+The role helper is not connected to authenticated sessions. Decoys and the
+three-condition research comparison remain future integration work.

@@ -14,6 +14,6 @@ COPY . .
 COPY --from=frontend /build/frontend/dist ./frontend/dist
 RUN useradd --create-home cometcare && chown -R cometcare:cometcare /app
 USER cometcare
-ENV PORT=10000 COMETCARE_HOSTED=true
+ENV PORT=10000 COMETCARE_HOSTED=true COMETCARE_DB_PATH=/app/data/cometcare.sqlite3
 EXPOSE 10000
 CMD ["sh", "-c", "exec python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1"]
