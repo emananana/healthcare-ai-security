@@ -50,6 +50,16 @@ class HostingTests(unittest.TestCase):
         self.assertEqual(self.client.post('/api/module-checks', json={}, auth=self.auth).status_code, 429)
         self.assertEqual(self.client.get('/api/events', auth=self.auth).json(), [])
 
+    def test_experiments_use_hosted_protections(self):
+        self.assertEqual(self.client.get('/api/experiments').status_code, 401)
+        body = {'scenario_id': 'own_policy'}
+        self.assertEqual(self.client.post('/api/experiments/case', json=body).status_code, 401)
+        self.assertEqual(self.client.post('/api/experiments/case', json=body, auth=self.auth,
+                         headers={'Origin': 'https://evil.example'}).status_code, 403)
+        for _ in range(10):
+            self.assertEqual(self.client.post('/api/experiments/case', json=body, auth=self.auth).status_code, 200)
+        self.assertEqual(self.client.post('/api/experiments/case', json=body, auth=self.auth).status_code, 429)
+
     def test_missing_password_rejected(self):
         with self.assertRaises(ValueError):
             create_app(settings=Settings(hosted=True))

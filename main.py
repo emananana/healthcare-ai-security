@@ -37,6 +37,12 @@ class ChatRequest(BaseModel):
         return value
 
 
+class ExperimentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scenario_id: str
+    mode: Literal["mock", "live"] = "mock"
+
+
 class AttackRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     customer_id: str
@@ -125,6 +131,19 @@ def create_app(orchestrator: Orchestrator | None = None, *, settings: Settings |
                 user, {"target_customer_id": body.target_customer_id, "attack_type": body.attack_type}
             )
             return jsonable_encoder({"attack": generated, "response": response})
+
+    @api.get("/api/experiments")
+    def experiment_catalog():
+        from evaluation.comparison import SCENARIOS
+        return {"scenarios": SCENARIOS, "live_available": settings.mode == "live"}
+
+    @api.post("/api/experiments/case")
+    def experiment_case(body: ExperimentRequest):
+        from evaluation.comparison import run_case
+        try:
+            return run_case(body.scenario_id, body.mode, settings)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from None
 
     @api.post("/api/module-checks")
     def module_checks():

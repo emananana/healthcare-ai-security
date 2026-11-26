@@ -24,6 +24,8 @@ async function request(path, body) {
 }
 
 export const api = {
+  experiments: () => request('/experiments'),
+  experimentCase: (scenarioId, mode) => request('/experiments/case', {scenario_id: scenarioId, mode}),
   status: () => request('/status'),
   moduleChecks: () => request('/module-checks', {}),
   users: () => request('/users'),

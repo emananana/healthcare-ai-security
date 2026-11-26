@@ -234,3 +234,35 @@ three-condition research comparison remain future integration work.
 Security Lab → Module Checks runs the existing SQLite runner in a disposable database,
 plus standalone role-helper examples. Results are offline mock-pipeline checks, not
 live detector accuracy or authenticated role enforcement. Shared audit is untouched.
+
+
+### Experiments: fixed-action defense comparison
+
+Security Lab → Experiments compares six labeled development requests across:
+baseline (no ownership or blue check), traditional authorization, and
+authorization plus blue. Each case uses the same fixed proposed action and
+returns repository text directly. This isolates the defense effect; it does
+**not** evaluate enterprise LLM planning, answer generation, adaptive red
+attacks, or end-to-end chatbot latency. The baseline retains resource
+validation and runs only in a disposable synthetic SQLite database.
+
+Offline mode uses mock blue and consumes no quota. Live mode uses the
+configured blue model and makes at most six calls, one per case, with no
+automatic retries. It stops after a model error; completed partial results
+remain exportable. Stop or leaving the page prevents subsequent cases, but
+an already-started request may finish. The shared 10-actions/minute limit
+also applies, so let other demo activity settle before a run.
+
+Metrics show completed/attempted counts and exclude errored trials from
+rates. Attack success requires the target's exact synthetic record ID in
+the response, not merely ALLOW. Legitimate success requires an allowed
+response with the requested record ID. Blue recommendation accuracy,
+detection and false-positive rates are separate from final gateway outcomes.
+Detection time measures blue analysis; trial time covers this fixed-action
+pipeline. These six development cases are not held-out research evidence.
+Download JSON before navigating away; browser results are not persisted.
+
+Implementation: evaluation/comparison.py, the /api/experiments catalog and
+/api/experiments/case route, and frontend/src/Experiments.jsx. The existing
+evaluation.runner and sqlite_runner contracts are unchanged. Normal portal
+authorization, records and audit are never disabled or reset by experiments.

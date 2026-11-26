@@ -42,7 +42,7 @@ class TeamAccessMiddleware(BaseHTTPMiddleware):
             from urllib.parse import urlsplit
             if origin and urlsplit(origin).netloc != request.headers.get('host'):
                 return JSONResponse({'detail': 'Cross-site requests are not allowed.'}, status_code=403)
-        if request.method == 'POST' and request.url.path in {'/api/chat', '/api/attacks', '/api/module-checks'}:
+        if request.method == 'POST' and request.url.path in {'/api/chat', '/api/attacks', '/api/module-checks', '/api/experiments/case'}:
             now = monotonic()
             while self.attempts and now - self.attempts[0] >= 60:
                 self.attempts.popleft()
